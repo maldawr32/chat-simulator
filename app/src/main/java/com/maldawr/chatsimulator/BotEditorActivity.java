@@ -6,12 +6,14 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -25,12 +27,14 @@ public class BotEditorActivity extends Activity {
     private EditText unread;
     private EditText activeFrom;
     private EditText activeTo;
+    private EditText maxBurst;
     private CheckBox autoReply;
+    private CheckBox initiative;
+    private Spinner replyMode;
     private ImageView avatarPreview;
     private String avatarUri = "";
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    @Override protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Store.ensureSeeded(this);
         long id = getIntent().getLongExtra("bot_id", -1L);
@@ -66,6 +70,7 @@ public class BotEditorActivity extends Activity {
         if (!avatarUri.isEmpty()) {
             try { avatarPreview.setImageURI(Uri.parse(avatarUri)); } catch (Exception ignored) {}
         }
+
         Button choose = Ui.button(this, "Choose profile image");
         choose.setOnClickListener(v -> chooseImage());
         form.addView(choose);
@@ -76,6 +81,7 @@ public class BotEditorActivity extends Activity {
         unread = field("Unread counter", String.valueOf(bot.unread));
         activeFrom = field("Active from hour (0-23)", String.valueOf(bot.activeFrom));
         activeTo = field("Active until hour (1-24)", String.valueOf(bot.activeTo));
+        maxBurst = field("Maximum messages in one reply burst (1-5)", String.valueOf(bot.maxBurst));
         form.addView(name);
         form.addView(phone);
         form.addView(status);
@@ -83,11 +89,37 @@ public class BotEditorActivity extends Activity {
         form.addView(activeFrom);
         form.addView(activeTo);
 
+        TextView modeLabel = Ui.label(this, "Reply timing", 14, true);
+        form.addView(modeLabel);
+        replyMode = new Spinner(this);
+        String[] modes = {"Instant", "Natural", "Slow"};
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, modes);
+        replyMode.setAdapter(adapter);
+        String current = bot.replyMode == null ? "natural" : bot.replyMode;
+        replyMode.setSelection("instant".equals(current) ? 0 : "slow".equals(current) ? 2 : 1);
+        form.addView(replyMode, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        form.addView(maxBurst);
+
         autoReply = new CheckBox(this);
-        autoReply.setText("Automatic smart routine replies");
+        autoReply.setText("Automatic contextual replies");
         autoReply.setTextColor(Ui.text(this));
         autoReply.setChecked(bot.autoReply);
         form.addView(autoReply);
+
+        initiative = new CheckBox(this);
+        initiative.setText("Allow follow-up messages later without a new message from me");
+        initiative.setTextColor(Ui.text(this));
+        initiative.setChecked(bot.initiative);
+        form.addView(initiative);
+
+        TextView hint = Ui.label(this,
+                "Natural mode may wait, skip a reply, or send several messages. Instant mode responds quickly. Slow mode can wait minutes.",
+                12,
+                false);
+        hint.setTextColor(Ui.sub(this));
+        hint.setPadding(0, Ui.dp(this, 6), 0, Ui.dp(this, 12));
+        form.addView(hint);
 
         Button save = Ui.button(this, "Save fictional bot");
         save.setOnClickListener(v -> save());
@@ -118,8 +150,7 @@ public class BotEditorActivity extends Activity {
         startActivityForResult(i, REQ_IMAGE);
     }
 
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+    @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode != REQ_IMAGE || resultCode != RESULT_OK || data == null || data.getData() == null) return;
         Uri uri = data.getData();
@@ -135,10 +166,14 @@ public class BotEditorActivity extends Activity {
         bot.name = clean(name, "Fictional Bot");
         bot.phone = clean(phone, Store.getPrefix(this) + " 000 000 000");
         bot.status = clean(status, "SIMULATION - fictional contact");
-        bot.unread = clampInt(unread.getText().toString(), 0, 99999, 0);
+        bot.unread = clampInt(unread.getText().toString(), 0, 99, 0);
         bot.activeFrom = clampInt(activeFrom.getText().toString(), 0, 23, 0);
         bot.activeTo = clampInt(activeTo.getText().toString(), 1, 24, 24);
+        bot.maxBurst = clampInt(maxBurst.getText().toString(), 1, 5, 3);
         bot.autoReply = autoReply.isChecked();
+        bot.initiative = initiative.isChecked();
+        int selected = replyMode.getSelectedItemPosition();
+        bot.replyMode = selected == 0 ? "instant" : selected == 2 ? "slow" : "natural";
         bot.avatarUri = avatarUri;
         Store.saveBot(this, bot);
         Toast.makeText(this, "Bot saved", Toast.LENGTH_SHORT).show();
