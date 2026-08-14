@@ -10,6 +10,7 @@ import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -62,6 +63,17 @@ public final class Ui {
         if (bold) v.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         v.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
         return v;
+    }
+
+    public static Button button(Context c, String title) {
+        Button b = new Button(c);
+        b.setText(title);
+        b.setAllCaps(false);
+        b.setTextSize(14);
+        b.setTextColor(Color.WHITE);
+        b.setBackground(rounded(brand(), 12, c));
+        b.setPadding(dp(c, 16), dp(c, 7), dp(c, 16), dp(c, 7));
+        return b;
     }
 
     public static TextView iconButton(Context c, String glyph, int sizeDp, float sp, int bgColor, int textColor) {
