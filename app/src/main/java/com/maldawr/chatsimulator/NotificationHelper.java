@@ -15,8 +15,10 @@ public final class NotificationHelper {
 
     private static String messageChannel(Context c) {
         String configured = Store.getNotificationSound(c);
-        Uri sound = configured.isEmpty() ? RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION) : Uri.parse(configured);
-        String id = "sim_messages_" + Integer.toHexString((configured + "m").hashCode());
+        Uri sound = configured.isEmpty()
+                ? Uri.parse("android.resource://" + c.getPackageName() + "/" + R.raw.message_incoming)
+                : Uri.parse(configured);
+        String id = "sim_messages_v2_" + Integer.toHexString((configured + "m").hashCode());
         NotificationChannel channel = new NotificationChannel(id, "Simulated messages", NotificationManager.IMPORTANCE_HIGH);
         channel.setDescription("Fictional local chat simulator notifications");
         channel.setSound(sound, new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_NOTIFICATION).build());
@@ -44,7 +46,7 @@ public final class NotificationHelper {
         PendingIntent pi = PendingIntent.getActivity(c, (int) bot.id, open, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
         Notification n = new Notification.Builder(c, messageChannel(c))
-                .setSmallIcon(R.drawable.ic_notification)
+                .setSmallIcon(R.drawable.ic_notification_custom)
                 .setContentTitle("SIMULATION - " + bot.name)
                 .setContentText(text)
                 .setStyle(new Notification.BigTextStyle().bigText(text + "\nFictional local chat data"))
@@ -62,7 +64,7 @@ public final class NotificationHelper {
         PendingIntent pi = PendingIntent.getActivity(c, (int) (bot.id + 4000), open, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
         Notification n = new Notification.Builder(c, callChannel(c))
-                .setSmallIcon(R.drawable.ic_notification)
+                .setSmallIcon(R.drawable.ic_notification_custom)
                 .setContentTitle("SIMULATED INCOMING CALL")
                 .setContentText(bot.name + " - " + bot.phone)
                 .setContentIntent(pi)
