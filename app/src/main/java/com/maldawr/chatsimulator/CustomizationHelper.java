@@ -11,8 +11,6 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.ImageDecoder;
 import android.graphics.Paint;
-import android.graphics.Rect;
-import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.graphics.drawable.Icon;
 import android.net.Uri;
@@ -87,6 +85,10 @@ public final class CustomizationHelper {
         return load(context, NOTIFICATION_LARGE);
     }
 
+    public static Bitmap homeIconBitmap(Context context) {
+        return load(context, HOME_ICON);
+    }
+
     public static boolean publishOrUpdateHomeShortcut(Context context) {
         Bitmap custom = load(context, HOME_ICON);
         if (custom == null) return false;
@@ -97,9 +99,11 @@ public final class CustomizationHelper {
         open.setComponent(new ComponentName(context.getPackageName(), context.getPackageName() + ".ShortcutEntry"));
         open.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
 
+        String label = Store.getHomeTitle(context);
+        if (label.length() > 18) label = label.substring(0, 18);
         ShortcutInfo shortcut = new ShortcutInfo.Builder(context, SHORTCUT_ID)
-                .setShortLabel("Chat Simulator")
-                .setLongLabel("Chat Simulator • Simulation")
+                .setShortLabel(label)
+                .setLongLabel(Store.getHomeTitle(context) + " • Simulation")
                 .setIcon(Icon.createWithAdaptiveBitmap(custom))
                 .setIntent(open)
                 .build();
@@ -175,7 +179,6 @@ public final class CustomizationHelper {
             result.setPixels(pixels, 0, size, 0, 0, size, size);
         }
 
-        // Permanent simulator marker: an opaque badge with an S-shaped cutout.
         Canvas canvas = new Canvas(result);
         float r = size * 0.18f;
         float cx = size - r - size * 0.05f;
@@ -207,7 +210,6 @@ public final class CustomizationHelper {
 
         Paint circle = new Paint(Paint.ANTI_ALIAS_FLAG);
         circle.setColor(Color.rgb(11, 20, 26));
-        circle.setShadowLayer(size * 0.02f, 0, size * 0.008f, 0x66000000);
         canvas.drawCircle(cx, cy, radius, circle);
 
         Paint text = new Paint(Paint.ANTI_ALIAS_FLAG);
