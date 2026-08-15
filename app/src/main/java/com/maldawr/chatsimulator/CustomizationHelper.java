@@ -99,11 +99,11 @@ public final class CustomizationHelper {
         open.setComponent(new ComponentName(context.getPackageName(), context.getPackageName() + ".ShortcutEntry"));
         open.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
 
-        String label = Store.getHomeTitle(context);
-        if (label.length() > 18) label = label.substring(0, 18);
+        String fullLabel = DisplayPrefs.getHomeTitle(context);
+        String shortLabel = fullLabel.length() > 18 ? fullLabel.substring(0, 18) : fullLabel;
         ShortcutInfo shortcut = new ShortcutInfo.Builder(context, SHORTCUT_ID)
-                .setShortLabel(label)
-                .setLongLabel(Store.getHomeTitle(context) + " • Simulation")
+                .setShortLabel(shortLabel)
+                .setLongLabel(fullLabel + " • Simulation")
                 .setIcon(Icon.createWithAdaptiveBitmap(custom))
                 .setIntent(open)
                 .build();
@@ -150,12 +150,10 @@ public final class CustomizationHelper {
     private static Bitmap buildSmallNotificationIcon(Bitmap source, int size) {
         Bitmap scaled = Bitmap.createScaledBitmap(source, size, size, true);
         Bitmap result = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
-
         int bg = averageCorners(scaled);
         int bgR = Color.red(bg), bgG = Color.green(bg), bgB = Color.blue(bg);
         int[] pixels = new int[size * size];
         scaled.getPixels(pixels, 0, size, 0, 0, size, size);
-
         long alphaSum = 0;
         for (int i = 0; i < pixels.length; i++) {
             int p = pixels[i];
@@ -169,7 +167,6 @@ public final class CustomizationHelper {
             pixels[i] = Color.argb(alpha, 255, 255, 255);
             alphaSum += alpha;
         }
-
         if (alphaSum < (long) size * size * 255 / 30) {
             Canvas fallback = new Canvas(result);
             Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -178,7 +175,6 @@ public final class CustomizationHelper {
         } else {
             result.setPixels(pixels, 0, size, 0, 0, size, size);
         }
-
         Canvas canvas = new Canvas(result);
         float r = size * 0.18f;
         float cx = size - r - size * 0.05f;
@@ -195,7 +191,6 @@ public final class CustomizationHelper {
         Paint.FontMetrics fm = cut.getFontMetrics();
         canvas.drawText("S", cx, cy - (fm.ascent + fm.descent) / 2f, cut);
         cut.setXfermode(null);
-
         if (scaled != source && !scaled.isRecycled()) scaled.recycle();
         return result;
     }
@@ -207,11 +202,9 @@ public final class CustomizationHelper {
         float radius = size * 0.145f;
         float cx = size - radius - size * 0.055f;
         float cy = size - radius - size * 0.055f;
-
         Paint circle = new Paint(Paint.ANTI_ALIAS_FLAG);
         circle.setColor(Color.rgb(11, 20, 26));
         canvas.drawCircle(cx, cy, radius, circle);
-
         Paint text = new Paint(Paint.ANTI_ALIAS_FLAG);
         text.setColor(Color.WHITE);
         text.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
@@ -224,18 +217,9 @@ public final class CustomizationHelper {
 
     private static int averageCorners(Bitmap bitmap) {
         int w = bitmap.getWidth(), h = bitmap.getHeight();
-        int[] values = {
-                bitmap.getPixel(2, 2),
-                bitmap.getPixel(w - 3, 2),
-                bitmap.getPixel(2, h - 3),
-                bitmap.getPixel(w - 3, h - 3)
-        };
+        int[] values = {bitmap.getPixel(2, 2), bitmap.getPixel(w - 3, 2), bitmap.getPixel(2, h - 3), bitmap.getPixel(w - 3, h - 3)};
         int r = 0, g = 0, b = 0;
-        for (int p : values) {
-            r += Color.red(p);
-            g += Color.green(p);
-            b += Color.blue(p);
-        }
+        for (int p : values) { r += Color.red(p); g += Color.green(p); b += Color.blue(p); }
         return Color.rgb(r / values.length, g / values.length, b / values.length);
     }
 
@@ -249,11 +233,8 @@ public final class CustomizationHelper {
     private static Bitmap load(Context context, String name) {
         File f = file(context, name);
         if (!f.exists()) return null;
-        try {
-            return BitmapFactory.decodeFile(f.getAbsolutePath());
-        } catch (Exception ignored) {
-            return null;
-        }
+        try { return BitmapFactory.decodeFile(f.getAbsolutePath()); }
+        catch (Exception ignored) { return null; }
     }
 
     private static File file(Context context, String name) {
