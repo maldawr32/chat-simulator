@@ -5,9 +5,7 @@ import android.app.AlertDialog;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-import android.provider.Settings;
 import android.view.Gravity;
-import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -50,7 +48,7 @@ public class CustomizationActivity extends Activity {
         addSection(body, "Home title");
         titleInput = new EditText(this);
         titleInput.setSingleLine(true);
-        titleInput.setText(Store.getHomeTitle(this));
+        titleInput.setText(DisplayPrefs.getHomeTitle(this));
         titleInput.setTextColor(0xFFFFFFFF);
         titleInput.setHintTextColor(0xFF8696A0);
         titleInput.setHint("Chat Simulator");
@@ -63,7 +61,7 @@ public class CustomizationActivity extends Activity {
         TextView sizeLabel = Ui.label(this, "Home title size", 15, true);
         sizeLabel.setTextColor(0xFFFFFFFF);
         sizeRow.addView(sizeLabel, new LinearLayout.LayoutParams(0, Ui.dp(this, 44), 1f));
-        sizeValue = Ui.label(this, Store.getHomeTitleSize(this) + " sp", 14, true);
+        sizeValue = Ui.label(this, DisplayPrefs.getHomeTitleSize(this) + " sp", 14, true);
         sizeValue.setTextColor(0xFF25D366);
         sizeValue.setGravity(Gravity.END | Gravity.CENTER_VERTICAL);
         sizeRow.addView(sizeValue);
@@ -71,7 +69,7 @@ public class CustomizationActivity extends Activity {
 
         sizeSeek = new SeekBar(this);
         sizeSeek.setMax(20);
-        sizeSeek.setProgress(Store.getHomeTitleSize(this) - 18);
+        sizeSeek.setProgress(DisplayPrefs.getHomeTitleSize(this) - 18);
         sizeSeek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 sizeValue.setText((18 + progress) + " sp");
@@ -85,8 +83,8 @@ public class CustomizationActivity extends Activity {
         saveTitle.setOnClickListener(v -> {
             String value = titleInput.getText().toString().trim();
             if (value.isEmpty()) value = "Chat Simulator";
-            Store.setHomeTitle(this, value);
-            Store.setHomeTitleSize(this, 18 + sizeSeek.getProgress());
+            DisplayPrefs.setHomeTitle(this, value);
+            DisplayPrefs.setHomeTitleSize(this, 18 + sizeSeek.getProgress());
             Toast.makeText(this, "Home title updated", Toast.LENGTH_SHORT).show();
         });
         body.addView(saveTitle);
