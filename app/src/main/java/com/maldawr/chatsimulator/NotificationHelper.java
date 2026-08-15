@@ -7,6 +7,7 @@ import android.app.PendingIntent;
 import android.app.Person;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.graphics.drawable.Icon;
 import android.media.AudioAttributes;
 import android.media.RingtoneManager;
@@ -102,8 +103,8 @@ public final class NotificationHelper {
                 readPi
         ).setSemanticAction(Notification.Action.SEMANTIC_ACTION_MARK_AS_READ).build();
 
-        Notification n = new Notification.Builder(c, MESSAGE_CHANNEL_ID)
-                .setSmallIcon(R.drawable.ic_notification_custom)
+        Notification.Builder builder = new Notification.Builder(c, MESSAGE_CHANNEL_ID)
+                .setSmallIcon(CustomizationHelper.notificationSmallIcon(c))
                 .setContentTitle(bot.name + " • Simulation")
                 .setContentText(newestText)
                 .setStyle(style)
@@ -113,11 +114,13 @@ public final class NotificationHelper {
                 .setCategory(Notification.CATEGORY_MESSAGE)
                 .setGroup("sim_chat_" + bot.id)
                 .setOnlyAlertOnce(false)
-                .setNumber(bot.unread)
-                .build();
+                .setNumber(bot.unread);
+
+        Bitmap large = CustomizationHelper.notificationLargeBitmap(c);
+        if (large != null) builder.setLargeIcon(large);
 
         ((NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE))
-                .notify(messageNotificationId(bot.id), n);
+                .notify(messageNotificationId(bot.id), builder.build());
     }
 
     public static void cancelMessage(Context c, long botId) {
@@ -137,18 +140,21 @@ public final class NotificationHelper {
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
 
-        Notification n = new Notification.Builder(c, CALL_CHANNEL_ID)
-                .setSmallIcon(R.drawable.ic_notification_custom)
+        Notification.Builder builder = new Notification.Builder(c, CALL_CHANNEL_ID)
+                .setSmallIcon(CustomizationHelper.notificationSmallIcon(c))
                 .setContentTitle("SIMULATED INCOMING CALL")
                 .setContentText(bot.name + " - " + bot.phone)
                 .setContentIntent(pi)
                 .setFullScreenIntent(pi, true)
                 .setOngoing(true)
                 .setCategory(Notification.CATEGORY_CALL)
-                .setVisibility(Notification.VISIBILITY_PUBLIC)
-                .build();
+                .setVisibility(Notification.VISIBILITY_PUBLIC);
+
+        Bitmap large = CustomizationHelper.notificationLargeBitmap(c);
+        if (large != null) builder.setLargeIcon(large);
+
         ((NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE))
-                .notify((int) (bot.id + 8000), n);
+                .notify((int) (bot.id + 8000), builder.build());
     }
 
     public static void cancelCall(Context c, Store.Bot bot) {
