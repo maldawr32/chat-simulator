@@ -12,11 +12,7 @@
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher">
 
-        <activity
-            android:name=".IncomingCallActivity"
-            android:exported="false"
-            android:showWhenLocked="true"
-            android:turnScreenOn="true" />
+        <activity android:name=".IncomingCallActivity" android:exported="false" android:showWhenLocked="true" android:turnScreenOn="true" />
         <activity android:name=".BotEditorActivity" android:exported="false" />
         <activity android:name=".ChatActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".MainActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
@@ -33,35 +29,16 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity-alias>
-
-        <activity-alias
-            android:name=".LauncherBlue"
-            android:targetActivity=".MainActivity"
-            android:enabled="false"
-            android:exported="true"
-            android:icon="@drawable/ic_launcher_blue"
-            android:label="Chat Simulator">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
+        <activity-alias android:name=".LauncherBlue" android:targetActivity=".MainActivity" android:enabled="false" android:exported="true" android:icon="@drawable/ic_launcher_blue" android:label="Chat Simulator">
+            <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>
         </activity-alias>
-
-        <activity-alias
-            android:name=".LauncherPurple"
-            android:targetActivity=".MainActivity"
-            android:enabled="false"
-            android:exported="true"
-            android:icon="@drawable/ic_launcher_purple"
-            android:label="Chat Simulator">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
+        <activity-alias android:name=".LauncherPurple" android:targetActivity=".MainActivity" android:enabled="false" android:exported="true" android:icon="@drawable/ic_launcher_purple" android:label="Chat Simulator">
+            <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>
         </activity-alias>
 
         <receiver android:name=".CallAlarmReceiver" android:exported="false" />
         <receiver android:name=".MessageAlarmReceiver" android:exported="false" />
         <receiver android:name=".ReplyAlarmReceiver" android:exported="false" />
+        <receiver android:name=".MarkReadReceiver" android:exported="false" />
     </application>
 </manifest>

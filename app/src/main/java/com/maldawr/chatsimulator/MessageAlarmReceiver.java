@@ -5,8 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 
 public class MessageAlarmReceiver extends BroadcastReceiver {
-    @Override
-    public void onReceive(Context context, Intent intent) {
+    @Override public void onReceive(Context context, Intent intent) {
         Store.ensureSeeded(context);
         long botId = intent.getLongExtra("bot_id", -1L);
         Store.Bot bot = Store.getBot(context, botId);
@@ -15,17 +14,9 @@ public class MessageAlarmReceiver extends BroadcastReceiver {
         long now = System.currentTimeMillis();
         String reply = Store.smartReply("scheduled message");
         Store.addMessage(context, new Store.Message(now, botId, reply, true, now));
-        bot.lastMessage = reply;
-        bot.lastTime = now;
-        if (!ChatActivity.isConversationVisible(botId)) {
-            bot.unread = Math.min(99, bot.unread + 1);
-        } else {
-            bot.unread = 0;
-        }
-        Store.saveBot(context, bot);
-
-        if (!ChatActivity.isConversationVisible(botId)) {
-            NotificationHelper.showMessage(context, bot, reply);
+        Store.Bot updated = Store.getBot(context, botId);
+        if (updated != null && !ChatActivity.isConversationVisible(botId)) {
+            NotificationHelper.showMessage(context, updated, reply);
         }
     }
 }

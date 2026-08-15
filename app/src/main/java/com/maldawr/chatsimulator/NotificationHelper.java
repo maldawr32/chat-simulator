@@ -7,6 +7,7 @@ import android.app.PendingIntent;
 import android.app.Person;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.drawable.Icon;
 import android.media.AudioAttributes;
 import android.media.RingtoneManager;
 import android.net.Uri;
@@ -14,10 +15,14 @@ import android.net.Uri;
 import java.util.List;
 
 public final class NotificationHelper {
-    public static final String MESSAGE_CHANNEL_ID = "sim_messages_v4";
+    public static final String MESSAGE_CHANNEL_ID = "sim_messages_v5";
     public static final String CALL_CHANNEL_ID = "sim_calls_v2";
 
     private NotificationHelper() {}
+
+    private static int messageNotificationId(long botId) {
+        return (int) (10000 + (botId % 100000));
+    }
 
     public static void ensureChannels(Context c) {
         NotificationManager nm = (NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE);
@@ -61,10 +66,19 @@ public final class NotificationHelper {
         Intent open = new Intent(c, ChatActivity.class);
         open.putExtra("bot_id", bot.id);
         open.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        PendingIntent pi = PendingIntent.getActivity(
+        PendingIntent openPi = PendingIntent.getActivity(
                 c,
                 (int) bot.id,
                 open,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+
+        Intent read = new Intent(c, MarkReadReceiver.class);
+        read.putExtra("bot_id", bot.id);
+        PendingIntent readPi = PendingIntent.getBroadcast(
+                c,
+                (int) (bot.id + 200000),
+                read,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
 
@@ -76,31 +90,43 @@ public final class NotificationHelper {
                 .setConversationTitle(bot.name + " • Simulation");
 
         List<Store.Message> recent = Store.loadMessages(c, bot.id);
-        int start = Math.max(0, recent.size() - 6);
+        int start = Math.max(0, recent.size() - 8);
         for (int i = start; i < recent.size(); i++) {
             Store.Message m = recent.get(i);
             style.addMessage(m.text, m.time, m.incoming ? person : null);
         }
+
+        Notification.Action markRead = new Notification.Action.Builder(
+                Icon.createWithResource(c, R.drawable.ic_notification),
+                "Mark as read",
+                readPi
+        ).setSemanticAction(Notification.Action.SEMANTIC_ACTION_MARK_AS_READ).build();
 
         Notification n = new Notification.Builder(c, MESSAGE_CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_notification_custom)
                 .setContentTitle(bot.name + " • Simulation")
                 .setContentText(newestText)
                 .setStyle(style)
-                .setContentIntent(pi)
+                .setContentIntent(openPi)
+                .addAction(markRead)
                 .setAutoCancel(true)
                 .setCategory(Notification.CATEGORY_MESSAGE)
                 .setGroup("sim_chat_" + bot.id)
                 .setOnlyAlertOnce(false)
+                .setNumber(bot.unread)
                 .build();
 
         ((NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE))
-                .notify((int) (10000 + (bot.id % 100000)), n);
+                .notify(messageNotificationId(bot.id), n);
+    }
+
+    public static void cancelMessage(Context c, long botId) {
+        ((NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE))
+                .cancel(messageNotificationId(botId));
     }
 
     public static void showCall(Context c, Store.Bot bot) {
         ensureChannels(c);
-
         Intent open = new Intent(c, IncomingCallActivity.class);
         open.putExtra("bot_id", bot.id);
         open.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
