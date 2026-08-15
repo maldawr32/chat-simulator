@@ -14,8 +14,16 @@
 
         <activity android:name=".IncomingCallActivity" android:exported="false" android:showWhenLocked="true" android:turnScreenOn="true" />
         <activity android:name=".BotEditorActivity" android:exported="false" />
+        <activity android:name=".CustomizationActivity" android:exported="false" />
         <activity android:name=".ChatActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".MainActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
+
+        <activity-alias
+            android:name=".ShortcutEntry"
+            android:targetActivity=".MainActivity"
+            android:enabled="true"
+            android:exported="true"
+            android:label="Chat Simulator" />
 
         <activity-alias
             android:name=".LauncherGreen"
