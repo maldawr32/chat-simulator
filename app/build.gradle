@@ -10,8 +10,8 @@ android {
         applicationId 'com.maldawr.chatsimulator'
         minSdk 29
         targetSdk 36
-        versionCode 3
-        versionName '0.3.0-v6'
+        versionCode 4
+        versionName '0.3.1-v6.1'
     }
 
     buildTypes {
