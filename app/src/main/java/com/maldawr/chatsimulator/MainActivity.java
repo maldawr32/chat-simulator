@@ -5,6 +5,7 @@ import android.app.Activity;
 import android.app.AlarmManager;
 import android.app.AlertDialog;
 import android.app.PendingIntent;
+import android.content.ComponentName;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
@@ -22,6 +23,7 @@ import android.view.WindowInsets;
 import android.view.WindowManager;
 import android.widget.EditText;
 import android.widget.FrameLayout;
+import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
@@ -31,198 +33,48 @@ import java.util.List;
 import java.util.Locale;
 
 public class MainActivity extends Activity {
-    private static final int CALL_SOUND = 42;
-    private static final int DARK = Color.rgb(11,20,26);
-    private static final int SEARCH = Color.rgb(32,39,43);
-    private static final int GREEN = Color.rgb(37,211,102);
-    private static final int MUTED = Color.rgb(134,150,160);
+    private static final int CALL_SOUND=42, DARK=Color.rgb(11,20,26), PANEL=Color.rgb(31,44,51), SEARCH=Color.rgb(32,39,43), GREEN=Color.rgb(37,211,102), MUTED=Color.rgb(134,150,160), RED=Color.rgb(244,67,98);
+    private LinearLayout content,nav,searchHost; private EditText searchInput; private TextView topTitle; private FrameLayout fab; private int page=0, filter=0;
 
-    private LinearLayout content;
-    private LinearLayout nav;
-    private LinearLayout searchHost;
-    private EditText searchInput;
-    private TextView topTitle;
-    private TextView fab;
-    private int page = 0;
-    private boolean unreadOnly = false;
+    @Override public void onCreate(Bundle b){super.onCreate(b);getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);getWindow().setStatusBarColor(DARK);getWindow().setNavigationBarColor(DARK);Store.ensureSeeded(this);NotificationHelper.ensureChannels(this);if(Build.VERSION.SDK_INT>=33&&checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED)requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},90);build();}
+    @Override protected void onResume(){super.onResume();if(content!=null)render();}
 
-    @Override public void onCreate(Bundle b) {
-        super.onCreate(b);
-        getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
-        getWindow().setStatusBarColor(DARK);
-        getWindow().setNavigationBarColor(DARK);
-        Store.ensureSeeded(this);
-        NotificationHelper.ensureChannels(this);
-        if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-            requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 90);
-        }
-        build();
+    private void build(){
+        LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setBackgroundColor(DARK);
+        LinearLayout header=new LinearLayout(this);header.setOrientation(LinearLayout.VERTICAL);header.setBackgroundColor(DARK);header.setOnApplyWindowInsetsListener((v,i)->{int t=Build.VERSION.SDK_INT>=30?i.getInsets(WindowInsets.Type.statusBars()).top:i.getSystemWindowInsetTop();v.setPadding(0,t,0,0);return i;});
+        LinearLayout title=new LinearLayout(this);title.setGravity(Gravity.CENTER_VERTICAL);title.setPadding(Ui.dp(this,20),Ui.dp(this,7),Ui.dp(this,12),0);topTitle=Ui.label(this,"Chat Simulator",29,true);topTitle.setTextColor(Color.WHITE);title.addView(topTitle,new LinearLayout.LayoutParams(0,Ui.dp(this,64),1f));TextView sim=Ui.label(this,"SIM",10,true);sim.setGravity(Gravity.CENTER);sim.setTextColor(GREEN);sim.setBackground(Ui.rounded(PANEL,14,this));title.addView(sim,new LinearLayout.LayoutParams(Ui.dp(this,42),Ui.dp(this,28)));IconView cam=new IconView(this,IconView.CAMERA,46);title.addView(cam,new LinearLayout.LayoutParams(Ui.dp(this,46),Ui.dp(this,46)));IconView more=new IconView(this,IconView.MORE,42);more.setOnClickListener(v->{page=3;render();});title.addView(more,new LinearLayout.LayoutParams(Ui.dp(this,42),Ui.dp(this,42)));header.addView(title);
+        searchHost=new LinearLayout(this);searchHost.setPadding(Ui.dp(this,20),Ui.dp(this,4),Ui.dp(this,20),Ui.dp(this,12));searchInput=new EditText(this);searchInput.setSingleLine(true);searchInput.setHint("Search...");searchInput.setTextColor(Color.WHITE);searchInput.setHintTextColor(MUTED);searchInput.setTextSize(16);searchInput.setCompoundDrawablesWithIntrinsicBounds(android.R.drawable.ic_menu_search,0,0,0);searchInput.setCompoundDrawablePadding(Ui.dp(this,10));searchInput.setBackground(Ui.rounded(SEARCH,30,this));searchInput.setPadding(Ui.dp(this,18),0,Ui.dp(this,18),0);searchHost.addView(searchInput,new LinearLayout.LayoutParams(-1,Ui.dp(this,58)));header.addView(searchHost);root.addView(header);
+        FrameLayout center=new FrameLayout(this);ScrollView sc=new ScrollView(this);content=new LinearLayout(this);content.setOrientation(LinearLayout.VERTICAL);content.setBackgroundColor(DARK);sc.addView(content,new ScrollView.LayoutParams(-1,-2));center.addView(sc,new FrameLayout.LayoutParams(-1,-1));fab=new FrameLayout(this);fab.setBackground(Ui.rounded(Color.WHITE,18,this));IconView plus=new IconView(this,IconView.PLUS,28).tint(DARK);FrameLayout.LayoutParams pip=new FrameLayout.LayoutParams(Ui.dp(this,28),Ui.dp(this,28),Gravity.CENTER);fab.addView(plus,pip);fab.setOnClickListener(v->startActivity(new Intent(this,BotEditorActivity.class)));FrameLayout.LayoutParams fp=new FrameLayout.LayoutParams(Ui.dp(this,60),Ui.dp(this,60),Gravity.END|Gravity.BOTTOM);fp.setMargins(0,0,Ui.dp(this,18),Ui.dp(this,18));center.addView(fab,fp);root.addView(center,new LinearLayout.LayoutParams(-1,0,1f));
+        nav=new LinearLayout(this);nav.setGravity(Gravity.CENTER);nav.setBackgroundColor(DARK);nav.setPadding(Ui.dp(this,8),Ui.dp(this,6),Ui.dp(this,8),Ui.dp(this,7));nav.setOnApplyWindowInsetsListener((v,i)->{int btm=Build.VERSION.SDK_INT>=30?i.getInsets(WindowInsets.Type.navigationBars()).bottom:i.getSystemWindowInsetBottom();v.setPadding(Ui.dp(this,8),Ui.dp(this,6),Ui.dp(this,8),Ui.dp(this,7)+btm);return i;});root.addView(nav);
+        searchInput.addTextChangedListener(new TextWatcher(){public void beforeTextChanged(CharSequence s,int a,int b,int c){}public void onTextChanged(CharSequence s,int a,int b,int c){if(page==0)chats();}public void afterTextChanged(Editable e){}});setContentView(root);root.requestApplyInsets();render();
     }
 
-    @Override protected void onResume() {
-        super.onResume();
-        if (content != null) render();
+    private void render(){content.removeAllViews();searchHost.setVisibility(page==0?View.VISIBLE:View.GONE);fab.setVisibility(page==0?View.VISIBLE:View.GONE);if(page==0){topTitle.setText("Chat Simulator");chats();}else if(page==1){topTitle.setText("Calls");calls();}else if(page==2){topTitle.setText("Updates");updates();}else{topTitle.setText("Tools");settingsPage();}renderNav();}
+    private void renderNav(){nav.removeAllViews();addNav(IconView.CHAT,"Chats",0,Store.totalUnread(this));addNav(IconView.PHONE,"Calls",1,0);addNav(IconView.UPDATES,"Updates",2,0);addNav(IconView.TOOLS,"Tools",3,0);}
+    private void addNav(int icon,String label,int target,int badge){LinearLayout box=new LinearLayout(this);box.setOrientation(LinearLayout.VERTICAL);box.setGravity(Gravity.CENTER);box.setOnClickListener(v->{page=target;render();});FrameLayout wrap=new FrameLayout(this);if(page==target)wrap.setBackground(Ui.rounded(Color.rgb(37,43,45),20,this));IconView iv=new IconView(this,icon,30).tint(page==target?GREEN:0xFFE9EDEF);wrap.addView(iv,new FrameLayout.LayoutParams(Ui.dp(this,30),Ui.dp(this,30),Gravity.CENTER));if(badge>0){TextView b=Ui.label(this,String.valueOf(Math.min(99,badge)),10,true);b.setTextColor(DARK);b.setGravity(Gravity.CENTER);b.setBackground(Ui.circle(GREEN));FrameLayout.LayoutParams bp=new FrameLayout.LayoutParams(Ui.dp(this,20),Ui.dp(this,20),Gravity.END|Gravity.TOP);wrap.addView(b,bp);}box.addView(wrap,new LinearLayout.LayoutParams(Ui.dp(this,64),Ui.dp(this,36)));TextView t=Ui.label(this,label,12,true);t.setTextColor(Color.WHITE);t.setGravity(Gravity.CENTER);box.addView(t,new LinearLayout.LayoutParams(-1,Ui.dp(this,27)));nav.addView(box,new LinearLayout.LayoutParams(0,Ui.dp(this,64),1f));}
+
+    private void chats(){content.removeAllViews();HorizontalScrollView hsv=new HorizontalScrollView(this);hsv.setHorizontalScrollBarEnabled(false);LinearLayout chips=new LinearLayout(this);chips.setPadding(Ui.dp(this,20),Ui.dp(this,6),Ui.dp(this,20),Ui.dp(this,10));chips.addView(chip("All",0,0));chips.addView(chip("Unread",1,Store.totalUnread(this)));chips.addView(chip("Favorites",2,Store.favoriteCount(this)));chips.addView(chip("Groups",3,Store.groupCount(this)));hsv.addView(chips);content.addView(hsv);
+        String q=searchInput==null?"":searchInput.getText().toString().trim().toLowerCase(Locale.ROOT);List<Store.Bot> bots=filter==1?Store.loadUnreadBots(this):filter==2?Store.loadFavoriteBots(this):filter==3?Store.loadGroupBots(this):Store.loadBots(this);int shown=0;
+        for(Store.Bot bot:bots){String hay=(bot.name+" "+bot.lastMessage+" "+bot.phone+" "+bot.groupSubtitle).toLowerCase(Locale.ROOT);if(!q.isEmpty()&&!hay.contains(q))continue;LinearLayout row=new LinearLayout(this);row.setGravity(Gravity.CENTER_VERTICAL);row.setPadding(Ui.dp(this,20),Ui.dp(this,8),Ui.dp(this,18),Ui.dp(this,8));row.addView(Ui.avatar(this,bot,60));LinearLayout info=new LinearLayout(this);info.setOrientation(LinearLayout.VERTICAL);info.setPadding(Ui.dp(this,14),0,0,0);LinearLayout l1=new LinearLayout(this);TextView name=Ui.oneLine(this,bot.name,17,Color.WHITE);name.setTypeface(android.graphics.Typeface.DEFAULT,android.graphics.Typeface.BOLD);l1.addView(name,new LinearLayout.LayoutParams(0,Ui.dp(this,28),1f));TextView time=Ui.oneLine(this,relativeTime(bot.lastTime),12,bot.unread>0?GREEN:MUTED);time.setGravity(Gravity.END|Gravity.CENTER_VERTICAL);l1.addView(time);info.addView(l1);LinearLayout l2=new LinearLayout(this);l2.setGravity(Gravity.CENTER_VERTICAL);String pre=(bot.groupChat&&!bot.lastSender.isEmpty()?bot.lastSender+": ":"")+bot.lastMessage;TextView preview=Ui.oneLine(this,pre,15,MUTED);l2.addView(preview,new LinearLayout.LayoutParams(0,Ui.dp(this,30),1f));if(bot.favorite){IconView st=new IconView(this,IconView.STAR,20).tint(0xFFFFC107);l2.addView(st,new LinearLayout.LayoutParams(Ui.dp(this,22),Ui.dp(this,22)));}if(bot.unread>0){TextView badge=Ui.label(this,String.valueOf(Math.min(99,bot.unread)),11,true);badge.setTextColor(DARK);badge.setGravity(Gravity.CENTER);badge.setBackground(Ui.circle(GREEN));LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(Ui.dp(this,27),Ui.dp(this,27));bp.setMargins(Ui.dp(this,7),0,0,0);l2.addView(badge,bp);}info.addView(l2);if(bot.groupChat&&!bot.groupSubtitle.isEmpty()){TextView gs=Ui.oneLine(this,bot.groupSubtitle,11,0xFF72818A);info.addView(gs,new LinearLayout.LayoutParams(-1,Ui.dp(this,20)));}row.addView(info,new LinearLayout.LayoutParams(0,-2,1f));row.setOnClickListener(v->{Intent in=new Intent(this,ChatActivity.class);in.putExtra("bot_id",bot.id);startActivity(in);});row.setOnLongClickListener(v->{String[] a={bot.favorite?"Remove favorite":"Add favorite","Mark as read","Edit"};new AlertDialog.Builder(this).setTitle(bot.name).setItems(a,(d,w)->{if(w==0){bot.favorite=!bot.favorite;Store.saveBot(this,bot);render();}else if(w==1){Store.markRead(this,bot.id);render();}else{Intent in=new Intent(this,BotEditorActivity.class);in.putExtra("bot_id",bot.id);startActivity(in);}}).show();return true;});content.addView(row,new LinearLayout.LayoutParams(-1,bot.groupChat?Ui.dp(this,102):Ui.dp(this,88)));shown++;}
+        if(shown==0){TextView e=Ui.label(this,"No conversations in this category",15,false);e.setTextColor(MUTED);e.setGravity(Gravity.CENTER);e.setPadding(0,Ui.dp(this,50),0,0);content.addView(e);}
     }
-
-    private void build() {
-        LinearLayout root = new LinearLayout(this);
-        root.setOrientation(LinearLayout.VERTICAL);
-        root.setBackgroundColor(DARK);
-
-        LinearLayout header = new LinearLayout(this);
-        header.setOrientation(LinearLayout.VERTICAL);
-        header.setBackgroundColor(DARK);
-        header.setOnApplyWindowInsetsListener((v, insets) -> {
-            int top = Build.VERSION.SDK_INT >= 30 ? insets.getInsets(WindowInsets.Type.statusBars()).top : insets.getSystemWindowInsetTop();
-            v.setPadding(0, top, 0, 0);
-            return insets;
-        });
-
-        LinearLayout titleRow = new LinearLayout(this);
-        titleRow.setOrientation(LinearLayout.HORIZONTAL);
-        titleRow.setGravity(Gravity.CENTER_VERTICAL);
-        titleRow.setPadding(Ui.dp(this,20),Ui.dp(this,6),Ui.dp(this,14),0);
-        topTitle = Ui.label(this,"Chat Simulator",29,true);
-        topTitle.setTextColor(Color.WHITE);
-        titleRow.addView(topTitle,new LinearLayout.LayoutParams(0,Ui.dp(this,64),1f));
-        TextView sim = Ui.label(this,"SIM",10,true); sim.setTextColor(GREEN); sim.setGravity(Gravity.CENTER); sim.setBackground(Ui.rounded(Color.rgb(25,34,38),12,this));
-        LinearLayout.LayoutParams sp = new LinearLayout.LayoutParams(Ui.dp(this,40),Ui.dp(this,28)); sp.setMargins(0,0,Ui.dp(this,8),0); titleRow.addView(sim,sp);
-        titleRow.addView(Ui.iconButton(this,"▣",46,25,Color.TRANSPARENT,Color.WHITE));
-        TextView more = Ui.iconButton(this,"⋮",42,28,Color.TRANSPARENT,Color.WHITE); more.setOnClickListener(v->{page=3;render();}); titleRow.addView(more);
-        header.addView(titleRow);
-
-        searchHost = new LinearLayout(this);
-        searchHost.setOrientation(LinearLayout.VERTICAL);
-        searchHost.setPadding(Ui.dp(this,20),Ui.dp(this,4),Ui.dp(this,20),Ui.dp(this,10));
-        searchInput = new EditText(this);
-        searchInput.setSingleLine(true);
-        searchInput.setTextSize(16);
-        searchInput.setTextColor(Color.WHITE);
-        searchInput.setHintTextColor(Color.rgb(145,150,154));
-        searchInput.setHint("⌕   Search...");
-        searchInput.setBackground(Ui.rounded(SEARCH,30,this));
-        searchInput.setPadding(Ui.dp(this,20),0,Ui.dp(this,20),0);
-        searchHost.addView(searchInput,new LinearLayout.LayoutParams(-1,Ui.dp(this,58)));
-        header.addView(searchHost);
-        root.addView(header);
-
-        FrameLayout center = new FrameLayout(this);
-        ScrollView scroll = new ScrollView(this);
-        scroll.setFillViewport(true);
-        content = new LinearLayout(this);
-        content.setOrientation(LinearLayout.VERTICAL);
-        content.setBackgroundColor(DARK);
-        scroll.addView(content,new ScrollView.LayoutParams(-1,-2));
-        center.addView(scroll,new FrameLayout.LayoutParams(-1,-1));
-        fab = Ui.iconButton(this,"▣+",58,20,Color.WHITE,DARK);
-        fab.setBackground(Ui.rounded(Color.WHITE,17,this));
-        fab.setOnClickListener(v->startActivity(new Intent(this,BotEditorActivity.class)));
-        FrameLayout.LayoutParams fp = new FrameLayout.LayoutParams(Ui.dp(this,58),Ui.dp(this,58),Gravity.END|Gravity.BOTTOM);
-        fp.setMargins(Ui.dp(this,18),Ui.dp(this,18),Ui.dp(this,18),Ui.dp(this,18));
-        center.addView(fab,fp);
-        root.addView(center,new LinearLayout.LayoutParams(-1,0,1f));
-
-        nav = new LinearLayout(this);
-        nav.setOrientation(LinearLayout.HORIZONTAL);
-        nav.setGravity(Gravity.CENTER);
-        nav.setBackgroundColor(DARK);
-        int baseBottom = Ui.dp(this,6);
-        nav.setPadding(Ui.dp(this,8),Ui.dp(this,7),Ui.dp(this,8),baseBottom);
-        nav.setOnApplyWindowInsetsListener((v,insets)->{
-            int bottom = Build.VERSION.SDK_INT >= 30 ? insets.getInsets(WindowInsets.Type.navigationBars()).bottom : insets.getSystemWindowInsetBottom();
-            v.setPadding(Ui.dp(this,8),Ui.dp(this,7),Ui.dp(this,8),baseBottom+bottom);
-            return insets;
-        });
-        root.addView(nav);
-
-        searchInput.addTextChangedListener(new TextWatcher(){
-            public void beforeTextChanged(CharSequence s,int st,int c,int a){}
-            public void onTextChanged(CharSequence s,int st,int b,int c){if(page==0)chats();}
-            public void afterTextChanged(Editable e){}
-        });
-
-        setContentView(root);
-        root.requestApplyInsets();
-        render();
-    }
-
-    private void render(){
-        content.removeAllViews();
-        searchHost.setVisibility(page==0?View.VISIBLE:View.GONE);
-        fab.setVisibility(page==0?View.VISIBLE:View.GONE);
-        if(page==0){topTitle.setText("Chat Simulator");chats();}
-        else if(page==1){topTitle.setText("Calls");calls();}
-        else if(page==2){topTitle.setText("Updates");updates();}
-        else{topTitle.setText("Tools");settingsPage();}
-        renderNav();
-    }
-
-    private void renderNav(){
-        nav.removeAllViews();
-        addNav("▰","Chats",0,page==0?Store.totalUnread(this):0);
-        addNav("☎","Calls",1,0);
-        addNav("◉","Updates",2,0);
-        addNav("▣","Tools",3,0);
-    }
-
-    private void addNav(String icon,String label,int target,int badge){
-        LinearLayout box=new LinearLayout(this);box.setOrientation(LinearLayout.VERTICAL);box.setGravity(Gravity.CENTER);box.setOnClickListener(v->{page=target;render();});
-        TextView iv=Ui.label(this,icon,24,false);iv.setGravity(Gravity.CENTER);iv.setTextColor(page==target?GREEN:Color.rgb(230,234,236));
-        if(page==target)iv.setBackground(Ui.rounded(Color.rgb(37,43,45),20,this));box.addView(iv,new LinearLayout.LayoutParams(Ui.dp(this,62),Ui.dp(this,34)));
-        TextView tv=Ui.label(this,badge>0?label+"  "+Math.min(badge,99):label,12,true);tv.setTextColor(Color.rgb(239,242,243));tv.setGravity(Gravity.CENTER);box.addView(tv,new LinearLayout.LayoutParams(-1,Ui.dp(this,27)));
-        nav.addView(box,new LinearLayout.LayoutParams(0,Ui.dp(this,64),1f));
-    }
-
-    private void chats(){
-        if(content==null)return;content.removeAllViews();
-        LinearLayout filters=new LinearLayout(this);filters.setOrientation(LinearLayout.HORIZONTAL);filters.setPadding(Ui.dp(this,20),Ui.dp(this,4),Ui.dp(this,20),Ui.dp(this,8));
-        filters.addView(filterChip("All",!unreadOnly,false));
-        filters.addView(filterChip("Unread  "+Store.totalUnread(this),unreadOnly,true));
-        content.addView(filters);
-
-        String query=searchInput==null?"":searchInput.getText().toString().trim().toLowerCase(Locale.ROOT);
-        List<Store.Bot> bots=unreadOnly?Store.loadUnreadBots(this):Store.loadBots(this);
-        int shown=0;
-        for(Store.Bot bot:bots){
-            String hay=(bot.name+" "+bot.lastMessage+" "+bot.phone).toLowerCase(Locale.ROOT);if(!query.isEmpty()&&!hay.contains(query))continue;
-            LinearLayout row=new LinearLayout(this);row.setOrientation(LinearLayout.HORIZONTAL);row.setGravity(Gravity.CENTER_VERTICAL);row.setPadding(Ui.dp(this,20),Ui.dp(this,8),Ui.dp(this,18),Ui.dp(this,8));row.setBackgroundColor(DARK);
-            row.addView(Ui.avatar(this,bot,58));
-            LinearLayout info=new LinearLayout(this);info.setOrientation(LinearLayout.VERTICAL);info.setPadding(Ui.dp(this,14),0,0,0);
-            LinearLayout line1=new LinearLayout(this);line1.setOrientation(LinearLayout.HORIZONTAL);line1.setGravity(Gravity.CENTER_VERTICAL);
-            TextView name=Ui.oneLine(this,bot.name,17,Color.WHITE);name.setTypeface(android.graphics.Typeface.DEFAULT,android.graphics.Typeface.BOLD);line1.addView(name,new LinearLayout.LayoutParams(0,Ui.dp(this,29),1f));
-            TextView time=Ui.oneLine(this,Store.formatTime(bot.lastTime),12,bot.unread>0?GREEN:MUTED);time.setGravity(Gravity.END|Gravity.CENTER_VERTICAL);line1.addView(time);info.addView(line1);
-            LinearLayout line2=new LinearLayout(this);line2.setOrientation(LinearLayout.HORIZONTAL);line2.setGravity(Gravity.CENTER_VERTICAL);
-            TextView preview=Ui.oneLine(this,bot.lastMessage,15,MUTED);line2.addView(preview,new LinearLayout.LayoutParams(0,Ui.dp(this,30),1f));
-            if(bot.unread>0){TextView badge=Ui.label(this,String.valueOf(Math.min(bot.unread,99)),11,true);badge.setTextColor(DARK);badge.setGravity(Gravity.CENTER);badge.setBackground(Ui.circle(GREEN));LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(Ui.dp(this,27),Ui.dp(this,27));bp.setMargins(Ui.dp(this,8),0,0,0);line2.addView(badge,bp);}info.addView(line2);
-            row.addView(info,new LinearLayout.LayoutParams(0,-2,1f));
-            row.setOnClickListener(v->{Intent in=new Intent(this,ChatActivity.class);in.putExtra("bot_id",bot.id);startActivity(in);});
-            row.setOnLongClickListener(v->{String[] items={"Mark as read","Edit simulated contact"};new AlertDialog.Builder(this).setTitle(bot.name).setItems(items,(d,w)->{if(w==0){Store.markRead(this,bot.id);render();}else{Intent in=new Intent(this,BotEditorActivity.class);in.putExtra("bot_id",bot.id);startActivity(in);}}).show();return true;});
-            content.addView(row,new LinearLayout.LayoutParams(-1,Ui.dp(this,88)));shown++;
-        }
-        if(shown==0){TextView empty=Ui.label(this,unreadOnly?"No unread simulated chats":"No simulated chats found",15,false);empty.setTextColor(MUTED);empty.setGravity(Gravity.CENTER);empty.setPadding(0,Ui.dp(this,48),0,Ui.dp(this,48));content.addView(empty);}
-    }
-
-    private TextView filterChip(String text,boolean selected,boolean second){
-        TextView chip=Ui.label(this,text,13,true);chip.setGravity(Gravity.CENTER);chip.setTextColor(selected?DARK:Color.WHITE);chip.setBackground(Ui.rounded(selected?GREEN:Color.rgb(31,44,51),18,this));chip.setOnClickListener(v->{unreadOnly=second;chats();renderNav();});LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-2,Ui.dp(this,36));lp.setMargins(0,0,Ui.dp(this,8),0);chip.setLayoutParams(lp);chip.setPadding(Ui.dp(this,15),0,Ui.dp(this,15),0);return chip;
-    }
+    private TextView chip(String label,int target,int count){String t=label+(count>0?"  "+count:"");TextView c=Ui.label(this,t,14,true);c.setGravity(Gravity.CENTER);boolean sel=filter==target;c.setTextColor(sel?Color.WHITE:MUTED);c.setBackground(Ui.rounded(sel?Color.rgb(46,51,53):Color.TRANSPARENT,20,this));c.setPadding(Ui.dp(this,16),0,Ui.dp(this,16),0);c.setOnClickListener(v->{filter=target;chats();});LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-2,Ui.dp(this,42));lp.setMargins(0,0,Ui.dp(this,8),0);c.setLayoutParams(lp);return c;}
 
     private void calls(){
-        for(Store.CallItem c:Store.loadCalls(this)){Store.Bot bot=Store.getBot(this,c.botId);if(bot==null)continue;LinearLayout row=new LinearLayout(this);row.setGravity(Gravity.CENTER_VERTICAL);row.setPadding(Ui.dp(this,20),Ui.dp(this,10),Ui.dp(this,18),Ui.dp(this,10));row.addView(Ui.avatar(this,bot,56));LinearLayout info=new LinearLayout(this);info.setOrientation(LinearLayout.VERTICAL);info.setPadding(Ui.dp(this,14),0,0,0);TextView n=Ui.label(this,bot.name,17,true);n.setTextColor(Color.WHITE);info.addView(n);String kind="missed".equals(c.type)?"↙ Missed":"incoming".equals(c.type)?"↙ Incoming":"↗ Outgoing";TextView sub=Ui.label(this,kind+" • "+Store.formatDateTime(c.time),13,false);sub.setTextColor("missed".equals(c.type)?Color.rgb(239,83,80):MUTED);info.addView(sub);row.addView(info,new LinearLayout.LayoutParams(0,-2,1f));row.addView(Ui.iconButton(this,"☎",46,20,Color.TRANSPARENT,GREEN));content.addView(row,new LinearLayout.LayoutParams(-1,Ui.dp(this,82)));}
-        TextView schedule=Ui.label(this,"+  Schedule simulated call",15,true);schedule.setTextColor(GREEN);schedule.setGravity(Gravity.CENTER);schedule.setPadding(0,Ui.dp(this,20),0,Ui.dp(this,20));schedule.setOnClickListener(v->chooseBot());content.addView(schedule);
+        LinearLayout actions=new LinearLayout(this);actions.setGravity(Gravity.CENTER);actions.setPadding(Ui.dp(this,12),Ui.dp(this,14),Ui.dp(this,12),Ui.dp(this,18));callAction(actions,IconView.PHONE,"Call",v->chooseBot());callAction(actions,IconView.CALENDAR,"Schedule",v->chooseBot());callAction(actions,IconView.KEYPAD,"Keypad",v->toast("Keypad is visual in the simulator"));callAction(actions,IconView.HEART,"Favorites",v->toast(Store.favoriteCount(this)+" favorite chats"));content.addView(actions);
+        TextView recent=Ui.label(this,"Recent",22,true);recent.setTextColor(Color.WHITE);recent.setPadding(Ui.dp(this,20),Ui.dp(this,6),0,Ui.dp(this,8));content.addView(recent);
+        for(Store.CallItem c:Store.loadCalls(this)){Store.Bot bot=Store.getBot(this,c.botId);if(bot==null)continue;boolean missed="missed".equals(c.type);LinearLayout row=new LinearLayout(this);row.setGravity(Gravity.CENTER_VERTICAL);row.setPadding(Ui.dp(this,20),Ui.dp(this,8),Ui.dp(this,18),Ui.dp(this,8));row.addView(Ui.avatar(this,bot,54));LinearLayout info=new LinearLayout(this);info.setOrientation(LinearLayout.VERTICAL);info.setPadding(Ui.dp(this,14),0,0,0);TextView n=Ui.oneLine(this,bot.name,17,missed?RED:Color.WHITE);n.setTypeface(android.graphics.Typeface.DEFAULT,android.graphics.Typeface.BOLD);info.addView(n);TextView sub=Ui.label(this,("outgoing".equals(c.type)?"↗ ":"↙ ")+Store.formatDateTime(c.time),14,false);sub.setTextColor(missed?RED:MUTED);info.addView(sub);row.addView(info,new LinearLayout.LayoutParams(0,-2,1f));IconView phone=new IconView(this,IconView.PHONE,34);phone.setOnClickListener(v->schedule(bot,1000));row.addView(phone,new LinearLayout.LayoutParams(Ui.dp(this,42),Ui.dp(this,42)));content.addView(row,new LinearLayout.LayoutParams(-1,Ui.dp(this,82)));}
     }
+    private void callAction(LinearLayout host,int icon,String label,View.OnClickListener click){LinearLayout b=new LinearLayout(this);b.setOrientation(LinearLayout.VERTICAL);b.setGravity(Gravity.CENTER);FrameLayout circle=new FrameLayout(this);circle.setBackground(Ui.circle(PANEL));IconView iv=new IconView(this,icon,38);circle.addView(iv,new FrameLayout.LayoutParams(Ui.dp(this,38),Ui.dp(this,38),Gravity.CENTER));circle.setOnClickListener(click);b.addView(circle,new LinearLayout.LayoutParams(Ui.dp(this,66),Ui.dp(this,66)));TextView t=Ui.label(this,label,12,false);t.setTextColor(MUTED);t.setGravity(Gravity.CENTER);b.addView(t,new LinearLayout.LayoutParams(-1,Ui.dp(this,30)));host.addView(b,new LinearLayout.LayoutParams(0,-2,1f));}
 
-    private void updates(){TextView t=Ui.label(this,"No simulated updates yet",17,true);t.setTextColor(Color.WHITE);t.setGravity(Gravity.CENTER);t.setPadding(0,Ui.dp(this,70),0,Ui.dp(this,8));content.addView(t);TextView s=Ui.label(this,"This tab is only a visual simulator.",13,false);s.setTextColor(MUTED);s.setGravity(Gravity.CENTER);content.addView(s);}
-
-    private void settingsPage(){
-        LinearLayout p=Ui.cardRow(this);p.setOrientation(LinearLayout.VERTICAL);TextView h=Ui.label(this,"Fictional number prefix",15,true);h.setTextColor(Color.WHITE);p.addView(h);EditText e=new EditText(this);e.setText(Store.getPrefix(this));e.setTextColor(Color.WHITE);p.addView(e);TextView save=Ui.label(this,"Save",15,true);save.setTextColor(GREEN);save.setPadding(0,Ui.dp(this,10),0,Ui.dp(this,10));save.setOnClickListener(v->{String q=e.getText().toString().trim();Store.setPrefix(this,q.isEmpty()?"+963":q);Toast.makeText(this,"Saved",Toast.LENGTH_SHORT).show();});p.addView(save);content.addView(p);
-        LinearLayout snd=Ui.cardRow(this);snd.setOrientation(LinearLayout.VERTICAL);TextView s2=Ui.label(this,"Simulated call ringtone",15,true);s2.setTextColor(Color.WHITE);s2.setPadding(0,Ui.dp(this,10),0,Ui.dp(this,10));s2.setOnClickListener(v->pickCall());snd.addView(s2);TextView sys=Ui.label(this,"Chat notification sound: change it from Android notification settings",13,false);sys.setTextColor(MUTED);sys.setPadding(0,Ui.dp(this,10),0,Ui.dp(this,10));sys.setOnClickListener(v->openNotificationSettings());snd.addView(sys);content.addView(snd);
-        LinearLayout demo=Ui.cardRow(this);demo.setOrientation(LinearLayout.VERTICAL);TextView reset=Ui.label(this,"Reset simulation data",14,true);reset.setTextColor(GREEN);reset.setPadding(0,Ui.dp(this,12),0,Ui.dp(this,12));reset.setOnClickListener(v->new AlertDialog.Builder(this).setTitle("Reset demo data?").setPositiveButton("Reset",(d,w)->{Store.resetDemo(this);render();}).setNegativeButton("Cancel",null).show());demo.addView(reset);content.addView(demo);
-    }
-
-    private void chooseBot(){List<Store.Bot> bots=Store.loadBots(this);String[] n=new String[bots.size()];for(int i=0;i<bots.size();i++)n[i]=bots.get(i).name+"  "+bots.get(i).phone;new AlertDialog.Builder(this).setTitle("Choose fictional character").setItems(n,(d,w)->delay(bots.get(w))).show();}
-    private void delay(Store.Bot bot){String[] n={"10 seconds","1 minute","5 minutes","15 minutes","1 hour"};long[] ms={10000,60000,300000,900000,3600000};new AlertDialog.Builder(this).setTitle("When should it ring?").setItems(n,(d,w)->schedule(bot,ms[w])).show();}
-    private void schedule(Store.Bot bot,long ms){Intent in=new Intent(this,CallAlarmReceiver.class);in.putExtra("bot_id",bot.id);PendingIntent pi=PendingIntent.getBroadcast(this,(int)(System.currentTimeMillis()&0x7fffffff),in,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);((AlarmManager)getSystemService(ALARM_SERVICE)).setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP,System.currentTimeMillis()+ms,pi);Toast.makeText(this,"Simulated call scheduled",Toast.LENGTH_SHORT).show();}
-    private void pickCall(){Intent in=new Intent(RingtoneManager.ACTION_RINGTONE_PICKER);in.putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE,RingtoneManager.TYPE_RINGTONE);startActivityForResult(in,CALL_SOUND);}
-    private void openNotificationSettings(){Intent in=new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS);in.putExtra(Settings.EXTRA_APP_PACKAGE,getPackageName());startActivity(in);}
-    @Override protected void onActivityResult(int req,int res,Intent data){super.onActivityResult(req,res,data);if(req==CALL_SOUND&&res==RESULT_OK&&data!=null){Uri u=data.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI);Store.setCallSound(this,u==null?"":u.toString());}}
+    private void updates(){TextView t=Ui.label(this,"Updates simulator",21,true);t.setTextColor(Color.WHITE);t.setGravity(Gravity.CENTER);t.setPadding(0,Ui.dp(this,80),0,Ui.dp(this,10));content.addView(t);TextView s=Ui.label(this,"Visual placeholder for future simulated status updates.",14,false);s.setTextColor(MUTED);s.setGravity(Gravity.CENTER);content.addView(s);}
+    private void settingsPage(){section("Appearance & icons");setting("Interface icon style",Store.getIconStyle(this),v->chooseIconStyle());setting("Launcher icon","Green / Blue / Purple",v->chooseLauncher());section("Notifications & calls");setting("Notification sound","Managed by Android notification settings",v->openNotificationSettings());setting("Simulated call ringtone","Choose ringtone",v->pickCall());section("Simulation");setting("Fictional number prefix",Store.getPrefix(this),v->editPrefix());setting("Reset simulation data","Restore demo chats, groups and calls",v->new AlertDialog.Builder(this).setTitle("Reset simulation data?").setPositiveButton("Reset",(d,w)->{Store.resetDemo(this);render();}).setNegativeButton("Cancel",null).show());}
+    private void section(String name){TextView t=Ui.label(this,name,14,true);t.setTextColor(GREEN);t.setPadding(Ui.dp(this,20),Ui.dp(this,22),0,Ui.dp(this,8));content.addView(t);} private void setting(String title,String sub,View.OnClickListener click){LinearLayout row=new LinearLayout(this);row.setOrientation(LinearLayout.VERTICAL);row.setPadding(Ui.dp(this,20),Ui.dp(this,13),Ui.dp(this,20),Ui.dp(this,13));TextView t=Ui.label(this,title,16,true);t.setTextColor(Color.WHITE);row.addView(t);TextView s=Ui.label(this,sub,13,false);s.setTextColor(MUTED);row.addView(s);row.setOnClickListener(click);content.addView(row);}
+    private void chooseIconStyle(){String[] a={"Rounded","Minimal","Bold"};new AlertDialog.Builder(this).setTitle("Interface icon style").setItems(a,(d,w)->{Store.setIconStyle(this,w==1?"minimal":w==2?"bold":"rounded");render();}).show();}
+    private void chooseLauncher(){String[] a={"Green custom","Blue","Purple"};new AlertDialog.Builder(this).setTitle("Launcher icon").setItems(a,(d,w)->applyLauncher(w==1?"blue":w==2?"purple":"green")).show();}
+    private void applyLauncher(String selected){PackageManager pm=getPackageManager();String pkg=getPackageName();String[] names={"LauncherGreen","LauncherBlue","LauncherPurple"};for(String n:names)pm.setComponentEnabledSetting(new ComponentName(pkg,pkg+"."+n),PackageManager.COMPONENT_ENABLED_STATE_DISABLED,PackageManager.DONT_KILL_APP);String target="green".equals(selected)?"LauncherGreen":"blue".equals(selected)?"LauncherBlue":"LauncherPurple";pm.setComponentEnabledSetting(new ComponentName(pkg,pkg+"."+target),PackageManager.COMPONENT_ENABLED_STATE_ENABLED,PackageManager.DONT_KILL_APP);Store.setIcon(this,selected);toast("Launcher icon updated");}
+    private void editPrefix(){EditText e=new EditText(this);e.setText(Store.getPrefix(this));new AlertDialog.Builder(this).setTitle("Fictional number prefix").setView(e).setPositiveButton("Save",(d,w)->Store.setPrefix(this,e.getText().toString().trim())).setNegativeButton("Cancel",null).show();}
+    private void openNotificationSettings(){Intent in=new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS);in.putExtra(Settings.EXTRA_APP_PACKAGE,getPackageName());startActivity(in);} private void pickCall(){Intent in=new Intent(RingtoneManager.ACTION_RINGTONE_PICKER);in.putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE,RingtoneManager.TYPE_RINGTONE);startActivityForResult(in,CALL_SOUND);} @Override protected void onActivityResult(int req,int res,Intent data){super.onActivityResult(req,res,data);if(req==CALL_SOUND&&res==RESULT_OK&&data!=null){Uri u=data.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI);Store.setCallSound(this,u==null?"":u.toString());}}
+    private void chooseBot(){List<Store.Bot> bots=Store.loadBots(this);String[] n=new String[bots.size()];for(int i=0;i<bots.size();i++)n[i]=bots.get(i).name;new AlertDialog.Builder(this).setTitle("Choose simulated contact").setItems(n,(d,w)->delay(bots.get(w))).show();} private void delay(Store.Bot bot){String[] l={"Now","10 seconds","1 minute","5 minutes"};long[] m={1000,10000,60000,300000};new AlertDialog.Builder(this).setTitle("When should it ring?").setItems(l,(d,w)->schedule(bot,m[w])).show();} private void schedule(Store.Bot bot,long ms){Intent in=new Intent(this,CallAlarmReceiver.class);in.putExtra("bot_id",bot.id);PendingIntent pi=PendingIntent.getBroadcast(this,(int)(System.currentTimeMillis()&0x7fffffff),in,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);((AlarmManager)getSystemService(ALARM_SERVICE)).setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP,System.currentTimeMillis()+ms,pi);toast("Simulated call scheduled");}
+    private String relativeTime(long t){long d=System.currentTimeMillis()-t;if(d<86400000L)return Store.formatTime(t);if(d<172800000L)return "Yesterday";return new java.text.SimpleDateFormat("MMM d",Locale.getDefault()).format(new java.util.Date(t));} private void toast(String s){Toast.makeText(this,s,Toast.LENGTH_SHORT).show();}
 }
