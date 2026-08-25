@@ -1,10 +1,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
 
     <application
+        android:name=".ChatApp"
         android:allowBackup="true"
         android:label="Chat Simulator"
         android:theme="@style/AppTheme"
@@ -15,35 +18,14 @@
         <activity android:name=".IncomingCallActivity" android:exported="false" android:showWhenLocked="true" android:turnScreenOn="true" />
         <activity android:name=".BotEditorActivity" android:exported="false" />
         <activity android:name=".CustomizationActivity" android:exported="false" />
+        <activity android:name=".IntelligenceSettingsActivity" android:exported="false" />
         <activity android:name=".ChatActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".MainActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
 
-        <activity-alias
-            android:name=".ShortcutEntry"
-            android:targetActivity=".MainActivity"
-            android:enabled="true"
-            android:exported="true"
-            android:label="Chat Simulator" />
-
-        <activity-alias
-            android:name=".LauncherGreen"
-            android:targetActivity=".MainActivity"
-            android:enabled="true"
-            android:exported="true"
-            android:icon="@mipmap/ic_launcher"
-            android:label="Chat Simulator">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity-alias>
-        <activity-alias android:name=".LauncherBlue" android:targetActivity=".MainActivity" android:enabled="false" android:exported="true" android:icon="@drawable/ic_launcher_blue" android:label="Chat Simulator">
-            <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>
-        </activity-alias>
-        <activity-alias android:name=".LauncherPurple" android:targetActivity=".MainActivity" android:enabled="false" android:exported="true" android:icon="@drawable/ic_launcher_purple" android:label="Chat Simulator">
-            <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>
-        </activity-alias>
-
+        <activity-alias android:name=".ShortcutEntry" android:targetActivity=".MainActivity" android:enabled="true" android:exported="true" android:label="Chat Simulator" />
+        <activity-alias android:name=".LauncherGreen" android:targetActivity=".MainActivity" android:enabled="true" android:exported="true" android:icon="@mipmap/ic_launcher" android:label="Chat Simulator"><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity-alias>
+        <activity-alias android:name=".LauncherBlue" android:targetActivity=".MainActivity" android:enabled="false" android:exported="true" android:icon="@drawable/ic_launcher_blue" android:label="Chat Simulator"><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity-alias>
+        <activity-alias android:name=".LauncherPurple" android:targetActivity=".MainActivity" android:enabled="false" android:exported="true" android:icon="@drawable/ic_launcher_purple" android:label="Chat Simulator"><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity-alias>
         <receiver android:name=".CallAlarmReceiver" android:exported="false" />
         <receiver android:name=".MessageAlarmReceiver" android:exported="false" />
         <receiver android:name=".ReplyAlarmReceiver" android:exported="false" />
