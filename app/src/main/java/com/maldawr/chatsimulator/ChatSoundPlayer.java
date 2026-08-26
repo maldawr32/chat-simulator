@@ -15,6 +15,7 @@ public final class ChatSoundPlayer {
     private int outgoingStreamId;
     private volatile boolean incomingReady;
     private volatile boolean outgoingReady;
+    private volatile boolean pendingIncoming;
 
     public ChatSoundPlayer(Context context) {
         this.context = context.getApplicationContext();
@@ -28,36 +29,53 @@ public final class ChatSoundPlayer {
                 .build();
         soundPool.setOnLoadCompleteListener((pool, sampleId, status) -> {
             if (status != 0) return;
-            if (sampleId == incomingId) incomingReady = true;
+            if (sampleId == incomingId) {
+                incomingReady = true;
+                if (pendingIncoming) {
+                    pendingIncoming = false;
+                    incomingStreamId = playLoaded(sampleId, incomingStreamId);
+                }
+            }
             if (sampleId == outgoingId) outgoingReady = true;
         });
-        incomingId = soundPool.load(this.context, R.raw.message_incoming, 1);
+        incomingId = soundPool.load(this.context, R.raw.message_incoming_v3, 1);
         outgoingId = soundPool.load(this.context, R.raw.message_outgoing, 1);
     }
 
     public void playIncoming() {
-        incomingStreamId = play(incomingId, incomingReady, incomingStreamId);
+        if (!incomingReady || incomingId == 0) {
+            pendingIncoming = true;
+            return;
+        }
+        pendingIncoming = false;
+        incomingStreamId = playLoaded(incomingId, incomingStreamId);
     }
 
     public void playOutgoing() {
-        outgoingStreamId = play(outgoingId, outgoingReady, outgoingStreamId);
+        if (!outgoingReady || outgoingId == 0) {
+            playFallback();
+            return;
+        }
+        outgoingStreamId = playLoaded(outgoingId, outgoingStreamId);
     }
 
-    private int play(int sampleId, boolean ready, int previousStreamId) {
+    private int playLoaded(int sampleId, int previousStreamId) {
         SoundPool pool = soundPool;
-        if (pool != null && ready && sampleId != 0) {
-            try {
-                if (previousStreamId != 0) pool.stop(previousStreamId);
-                return pool.play(sampleId, 1f, 1f, 1, 0, 1f);
-            } catch (Exception ignored) {}
+        if (pool == null || sampleId == 0) return 0;
+        try {
+            if (previousStreamId != 0) pool.stop(previousStreamId);
+            return pool.play(sampleId, 1f, 1f, 1, 0, 1f);
+        } catch (Exception ignored) {
+            return 0;
         }
-        playFallback();
-        return 0;
     }
 
     private void playFallback() {
         try {
-            Ringtone fallback = RingtoneManager.getRingtone(context, RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION));
+            Ringtone fallback = RingtoneManager.getRingtone(
+                    context,
+                    RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+            );
             if (fallback != null) {
                 fallback.setAudioAttributes(new AudioAttributes.Builder()
                         .setUsage(AudioAttributes.USAGE_NOTIFICATION)
@@ -77,5 +95,6 @@ public final class ChatSoundPlayer {
         outgoingStreamId = 0;
         incomingReady = false;
         outgoingReady = false;
+        pendingIncoming = false;
     }
 }
