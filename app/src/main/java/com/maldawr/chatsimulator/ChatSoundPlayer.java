@@ -11,6 +11,8 @@ public final class ChatSoundPlayer {
     private SoundPool soundPool;
     private int incomingId;
     private int outgoingId;
+    private int incomingStreamId;
+    private int outgoingStreamId;
     private volatile boolean incomingReady;
     private volatile boolean outgoingReady;
 
@@ -34,23 +36,23 @@ public final class ChatSoundPlayer {
     }
 
     public void playIncoming() {
-        play(incomingId, incomingReady);
+        incomingStreamId = play(incomingId, incomingReady, incomingStreamId);
     }
 
     public void playOutgoing() {
-        play(outgoingId, outgoingReady);
+        outgoingStreamId = play(outgoingId, outgoingReady, outgoingStreamId);
     }
 
-    private void play(int sampleId, boolean ready) {
+    private int play(int sampleId, boolean ready, int previousStreamId) {
         SoundPool pool = soundPool;
         if (pool != null && ready && sampleId != 0) {
             try {
-                pool.stop(sampleId);
-                pool.play(sampleId, 1f, 1f, 1, 0, 1f);
-                return;
+                if (previousStreamId != 0) pool.stop(previousStreamId);
+                return pool.play(sampleId, 1f, 1f, 1, 0, 1f);
             } catch (Exception ignored) {}
         }
         playFallback();
+        return 0;
     }
 
     private void playFallback() {
@@ -71,6 +73,8 @@ public final class ChatSoundPlayer {
             if (soundPool != null) soundPool.release();
         } catch (Exception ignored) {}
         soundPool = null;
+        incomingStreamId = 0;
+        outgoingStreamId = 0;
         incomingReady = false;
         outgoingReady = false;
     }
