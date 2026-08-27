@@ -13,6 +13,7 @@ import java.io.InputStream;
 public final class CustomizationPrefs {
     private static final String PREFS = "chat_simulator_customization_v71";
     private static final String NOTIF_MODE = "notification_mode", NOTIF_URI = "notification_uri";
+    private static final String NOTIF_TITLE_MODE = "notification_title_mode", NOTIF_TITLE = "notification_title", NOTIF_SUBTITLE = "notification_subtitle";
     private static final String CALL_MODE = "call_mode", CALL_URI = "call_uri";
     private static final String CHAT_SOUNDS = "chat_sounds", VIBRATE = "vibrate", TICKS = "ticks", TYPING = "typing";
     private static final String IN_PATH = "incoming_path", IN_NAME = "incoming_name", OUT_PATH = "outgoing_path", OUT_NAME = "outgoing_name";
@@ -24,6 +25,19 @@ public final class CustomizationPrefs {
     public static String getNotificationMode(Context c){ return p(c).getString(NOTIF_MODE,"default"); }
     public static String getNotificationUri(Context c){ return p(c).getString(NOTIF_URI,""); }
     public static void setNotificationSound(Context c,String mode,String uri){ p(c).edit().putString(NOTIF_MODE,mode).putString(NOTIF_URI,uri==null?"":uri).apply(); }
+    public static String getNotificationTitleMode(Context c){ return p(c).getString(NOTIF_TITLE_MODE,"contact"); }
+    public static String getNotificationTitle(Context c){ return p(c).getString(NOTIF_TITLE,""); }
+    public static String getNotificationSubtitle(Context c){ return p(c).getString(NOTIF_SUBTITLE,""); }
+    public static void setNotificationDisplay(Context c,String mode,String title,String subtitle){
+        String safeMode="custom".equals(mode)?"custom":"contact";
+        p(c).edit().putString(NOTIF_TITLE_MODE,safeMode).putString(NOTIF_TITLE,cleanText(title,48)).putString(NOTIF_SUBTITLE,cleanText(subtitle,72)).apply();
+    }
+    public static String resolveNotificationTitle(Context c,String contactName){
+        String custom=getNotificationTitle(c);
+        if("custom".equals(getNotificationTitleMode(c))&&!custom.isEmpty())return custom;
+        String fallback=contactName==null?"":contactName.trim();
+        return fallback.isEmpty()?"Chat":fallback;
+    }
     public static String getCallMode(Context c){ return p(c).getString(CALL_MODE,"default"); }
     public static String getCallUri(Context c){ return p(c).getString(CALL_URI,""); }
     public static void setCallSound(Context c,String mode,String uri){ p(c).edit().putString(CALL_MODE,mode).putString(CALL_URI,uri==null?"":uri).apply(); }
@@ -61,7 +75,8 @@ public final class CustomizationPrefs {
         if(uri==null)return false;
         String prefix=incoming?"custom_chat_incoming":"custom_chat_outgoing";
         try{
-            for(File f:c.getFilesDir().listFiles()) if(f.getName().startsWith(prefix)) f.delete();
+            File[] files=c.getFilesDir().listFiles();
+            if(files!=null)for(File f:files)if(f.getName().startsWith(prefix))f.delete();
             String mime=c.getContentResolver().getType(uri); String ext=MimeTypeMap.getSingleton().getExtensionFromMimeType(mime); if(ext==null||ext.isEmpty())ext="audio";
             File out=new File(c.getFilesDir(),prefix+"."+ext);
             try(InputStream in=c.getContentResolver().openInputStream(uri); FileOutputStream fos=new FileOutputStream(out)){
@@ -81,5 +96,6 @@ public final class CustomizationPrefs {
         return "Custom audio";
     }
     private static String validPath(String value){ if(value==null||value.isEmpty())return ""; return new File(value).exists()?value:""; }
+    private static String cleanText(String value,int max){String v=value==null?"":value.trim().replace('\n',' ').replace('\r',' ');while(v.contains("  "))v=v.replace("  "," ");return v.length()>max?v.substring(0,max):v;}
     private static int clamp(int v,int min,int max){return Math.max(min,Math.min(max,v));}
 }
