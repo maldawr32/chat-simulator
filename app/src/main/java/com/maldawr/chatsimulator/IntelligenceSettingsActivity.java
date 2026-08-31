@@ -1,6 +1,7 @@
 package com.maldawr.chatsimulator;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.widget.Button;
@@ -13,7 +14,9 @@ import android.widget.Toast;
 
 public class IntelligenceSettingsActivity extends Activity {
     @Override protected void onCreate(Bundle state){super.onCreate(state);build();}
-    private void build(){LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setBackgroundColor(0xFF0B141A);root.addView(Ui.safetyBanner(this));ScrollView sc=new ScrollView(this);LinearLayout body=new LinearLayout(this);body.setOrientation(LinearLayout.VERTICAL);body.setPadding(Ui.dp(this,18),Ui.dp(this,18),Ui.dp(this,18),Ui.dp(this,32));TextView title=Ui.label(this,"Conversation Intelligence",25,true);title.setTextColor(0xFFFFFFFF);body.addView(title);TextView note=Ui.label(this,"Controls fictional local simulator conversations. Background timing is approximate because Android manages WorkManager execution.",13,false);note.setTextColor(0xFF8696A0);note.setPadding(0,Ui.dp(this,6),0,Ui.dp(this,14));body.addView(note);
+    @Override protected void onResume(){super.onResume();}
+    private void build(){LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setBackgroundColor(0xFF0B141A);root.addView(Ui.safetyBanner(this));ScrollView sc=new ScrollView(this);LinearLayout body=new LinearLayout(this);body.setOrientation(LinearLayout.VERTICAL);body.setPadding(Ui.dp(this,18),Ui.dp(this,18),Ui.dp(this,18),Ui.dp(this,32));TextView title=Ui.label(this,"Conversation Intelligence",25,true);title.setTextColor(0xFFFFFFFF);body.addView(title);TextView note=Ui.label(this,"Controls fictional simulator conversations. Android WorkManager runs periodic background work approximately; V8 also restores scheduling after reboot and app updates.",13,false);note.setTextColor(0xFF8696A0);note.setPadding(0,Ui.dp(this,6),0,Ui.dp(this,14));body.addView(note);
+        Button deepSeek=Ui.button(this,"DeepSeek AI settings • optional");deepSeek.setOnClickListener(v->startActivity(new Intent(this,DeepSeekSettingsActivity.class)));body.addView(deepSeek);TextView ds=Ui.label(this,AiPrefs.shouldUseDeepSeek(this)?"DeepSeek is configured for fictional replies":"Local reply engine is active; DeepSeek is optional",12,false);ds.setTextColor(0xFF8696A0);ds.setPadding(0,Ui.dp(this,5),0,Ui.dp(this,10));body.addView(ds);
         addSwitch(body,"Background conversation activity","Allow fictional bots and groups to start conversations periodically",Store.isAutomationEnabled(this),(c,v)->{Store.setAutomationEnabled(c,v);if(v)AutomationManager.ensureScheduled(c);else AutomationManager.cancel(c);});
         addSwitch(body,"Online information","Allow weather, currency and market data providers",Store.isOnlineContentEnabled(this),Store::setOnlineContentEnabled);
         addSwitch(body,"Wi‑Fi only for online data","Avoid mobile data for information lookups",Store.isWifiOnly(this),Store::setWifiOnly);

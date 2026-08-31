@@ -20,6 +20,15 @@ public final class ConversationEngine {
         String normalized = normalize(input);
         List<Store.Message> recent = Store.recentMessages(context, bot.id, 24);
         long replyToId = lastOutgoingId(recent);
+        if (AiPrefs.shouldUseDeepSeek(context)) {
+            String sender = bot.name;
+            if (bot.groupChat) {
+                List<Store.GroupMember> members = Store.loadGroupMembers(context, bot.id);
+                if (!members.isEmpty()) sender = members.get(RANDOM.nextInt(members.size())).name;
+            }
+            plan.add(input, sender, "", replyToId, "deepseek", firstDelay(bot.replyMode));
+            return plan;
+        }
         int consecutiveOutgoing = consecutiveOutgoing(recent);
         String topic = detectTopic(normalized, bot.lastTopic);
         bot.lastTopic = topic;

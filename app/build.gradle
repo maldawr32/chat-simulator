@@ -1,7 +1,55 @@
 plugins { id 'com.android.application' }
-android { namespace 'com.maldawr.chatsimulator'; compileSdk 36
-    defaultConfig { applicationId 'com.maldawr.chatsimulator'; minSdk 29; targetSdk 36; versionCode 7; versionName '0.4.1-v7.1' }
-    buildTypes { release { minifyEnabled false; proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro' } }
-    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+
+def ciRun = System.getenv('GITHUB_RUN_NUMBER')
+def calculatedVersionCode = ciRun ? 800000 + ciRun.toInteger() : 800000
+def releaseKeyFile = System.getenv('CHAT_SIM_KEYSTORE_FILE')
+def releaseAlias = System.getenv('CHAT_SIM_KEY_ALIAS')
+def releaseStorePassword = System.getenv('CHAT_SIM_STORE_PASSWORD')
+def releaseKeyPassword = System.getenv('CHAT_SIM_KEY_PASSWORD')
+def hasReleaseSigning = releaseKeyFile && file(releaseKeyFile).exists() && releaseAlias && releaseStorePassword && releaseKeyPassword
+
+android {
+    namespace 'com.maldawr.chatsimulator'
+    compileSdk 36
+
+    signingConfigs {
+        release {
+            if (hasReleaseSigning) {
+                storeFile file(releaseKeyFile)
+                storePassword releaseStorePassword
+                keyAlias releaseAlias
+                keyPassword releaseKeyPassword
+            }
+        }
+    }
+
+    defaultConfig {
+        applicationId 'com.maldawr.chatsimulator'
+        minSdk 29
+        targetSdk 36
+        versionCode calculatedVersionCode
+        versionName "0.5.0-v8.${ciRun ?: 'local'}"
+    }
+
+    buildTypes {
+        debug { }
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            if (hasReleaseSigning) signingConfig signingConfigs.release
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
 }
-dependencies { def room_version='2.8.4'; def work_version='2.11.2'; implementation "androidx.room:room-runtime:$room_version"; annotationProcessor "androidx.room:room-compiler:$room_version"; implementation "androidx.work:work-runtime:$work_version" }
+
+dependencies {
+    def room_version='2.8.4'
+    def work_version='2.11.2'
+    implementation "androidx.room:room-runtime:$room_version"
+    annotationProcessor "androidx.room:room-compiler:$room_version"
+    implementation "androidx.work:work-runtime:$work_version"
+}

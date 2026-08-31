@@ -33,12 +33,43 @@ jobs:
         with:
           gradle-version: '8.13'
 
-      - name: Build debug APK
-        run: gradle --no-daemon assembleDebug
+      - name: Restore stable debug signing key
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: chat-simulator-debug-signing-v1
+
+      - name: Prepare optional release signing
+        id: signing
+        env:
+          KEYSTORE_B64: ${{ secrets.CHAT_SIM_KEYSTORE_B64 }}
+          KEY_ALIAS: ${{ secrets.CHAT_SIM_KEY_ALIAS }}
+          STORE_PASSWORD: ${{ secrets.CHAT_SIM_STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.CHAT_SIM_KEY_PASSWORD }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ] && [ -n "$KEY_ALIAS" ] && [ -n "$STORE_PASSWORD" ] && [ -n "$KEY_PASSWORD" ]; then
+            printf '%s' "$KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/chat-simulator-release.jks"
+            echo 'release=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'release=false' >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build APK
+        env:
+          CHAT_SIM_KEYSTORE_FILE: ${{ runner.temp }}/chat-simulator-release.jks
+          CHAT_SIM_KEY_ALIAS: ${{ secrets.CHAT_SIM_KEY_ALIAS }}
+          CHAT_SIM_STORE_PASSWORD: ${{ secrets.CHAT_SIM_STORE_PASSWORD }}
+          CHAT_SIM_KEY_PASSWORD: ${{ secrets.CHAT_SIM_KEY_PASSWORD }}
+        run: |
+          if [ '${{ steps.signing.outputs.release }}' = 'true' ]; then
+            gradle --no-daemon assembleRelease
+          else
+            gradle --no-daemon assembleDebug
+          fi
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: chat-simulator-debug
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: chat-simulator-v8
+          path: app/build/outputs/apk/**/*.apk
           if-no-files-found: error

@@ -25,6 +25,12 @@ public class ReplyWorker extends Worker {
             Store.applyReaction(context, botId, replyToId, reaction, sender);
             return Result.success();
         }
+        if ("deepseek".equals(kind)) {
+            String prompt = text;
+            try { text = DeepSeekClient.replyBlocking(context, bot, prompt); }
+            catch (Exception ignored) { text = Store.smartReply(prompt); }
+            kind = "text";
+        }
         if (text.trim().isEmpty()) return Result.success();
         Store.addMessage(context, new Store.Message(Store.nextMessageId(), botId, text, true, System.currentTimeMillis(), sender, "", replyToId, "text"));
         Store.Bot updated = Store.getBot(context, botId);
